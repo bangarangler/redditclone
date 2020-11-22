@@ -68,9 +68,9 @@ UserResponse = __decorate([
     type_graphql_1.ObjectType()
 ], UserResponse);
 let UserResolver = class UserResolver {
-    me({ req, em }) {
+    me({ em, req }) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (req.session.userId) {
+            if (!req.session.userId) {
                 return null;
             }
             const user = yield em.findOne(User_1.User, { id: req.session.userId });
