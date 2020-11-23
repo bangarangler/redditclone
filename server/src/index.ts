@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import * as dotenv from "dotenv";
 dotenv.config();
+import cors from "cors";
 import session from "express-session";
 import connectRedis from "connect-redis";
 import redis from "redis";
@@ -24,6 +25,13 @@ const main = async () => {
 
   const RedisStore = connectRedis(session);
   const redisClient = redis.createClient();
+
+  app.use(
+    cors({
+      origin: "http://localhost:3000",
+      credentials: true,
+    })
+  );
 
   app.use(
     session({
@@ -54,7 +62,10 @@ const main = async () => {
     },
   });
 
-  apolloServer.applyMiddleware({ app });
+  apolloServer.applyMiddleware({
+    app,
+    cors: false,
+  });
 
   app.listen(port, () => {
     console.log(`server started on ${port}`);

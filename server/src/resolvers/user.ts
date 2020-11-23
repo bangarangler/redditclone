@@ -9,6 +9,7 @@ import {
   ObjectType,
 } from "type-graphql";
 import argon2 from "argon2";
+import { EntityManager } from "@mikro-orm/postgresql";
 import { User } from "../entities/User";
 import { MyContext } from "src/types";
 
@@ -60,7 +61,7 @@ export class UserResolver {
         errors: [
           {
             field: "username",
-            message: "lenght must be greater than 2",
+            message: "length must be greater than 2",
           },
         ],
       };
@@ -70,23 +71,35 @@ export class UserResolver {
         errors: [
           {
             field: "password",
-            message: "lenght must be greater than 2",
+            message: "length must be greater than 2",
           },
         ],
       };
     }
     const hashedPassword = await argon2.hash(options.password);
-    const user = em.create(User, {
-      username: options.username,
-      password: hashedPassword,
-    });
+    // const user = em.create(User, {
+    //   username: options.username,
+    //   password: hashedPassword,
+    // });
+    let user;
     try {
-      await em.persistAndFlush(user);
+      const result = await (em as EntityManager)
+        .createQueryBuilder(User)
+        .getKnexQuery()
+        .insert({
+          username: options.username,
+          password: hashedPassword,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+        .returning("*");
+      user = result[0];
+      // await em.persistAndFlush(user);
     } catch (err) {
       console.log("err from register", err.message);
       // duplicate username error
-      if (err.code === "23505") {
-        // || err.detail.includes("already exists")) {
+      // if (err.code === "23505") { // didn't work
+      if (err.detail.includes("already exists")) {
         return {
           errors: [
             {
@@ -97,7 +110,6 @@ export class UserResolver {
         };
       }
     }
-
     // store user id session
     // this will set a cooki on the user
     // keep them logged in
